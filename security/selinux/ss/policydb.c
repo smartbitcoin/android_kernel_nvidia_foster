@@ -1379,7 +1379,7 @@ static int class_read(struct policydb *p, struct hashtab *h, void *fp)
 		if (rc)
 			goto bad;
 		ncons = le32_to_cpu(buf[0]);
-		rc = read_cons_helper(&cladatum->validatetrans, ncons, 1, fp);
+		rc = read_cons_helper(p, &cladatum->validatetrans, ncons, 1, fp);
 		if (rc)
 			goto bad;
 	}
@@ -3018,23 +3018,6 @@ static int role_write(void *vkey, void *datum, void *ptr)
 	rc = ebitmap_write(&role->types, fp);
 	if (rc)
 		return rc;
-
-	if (p->policyvers >= POLICYDB_VERSION_NEW_OBJECT_DEFAULTS) {
-		buf[0] = cpu_to_le32(cladatum->default_user);
-		buf[1] = cpu_to_le32(cladatum->default_role);
-		buf[2] = cpu_to_le32(cladatum->default_range);
-
-		rc = put_entry(buf, sizeof(uint32_t), 3, fp);
-		if (rc)
-			return rc;
-	}
-
-	if (p->policyvers >= POLICYDB_VERSION_DEFAULT_TYPE) {
-		buf[0] = cpu_to_le32(cladatum->default_type);
-		rc = put_entry(buf, sizeof(uint32_t), 1, fp);
-		if (rc)
-			return rc;
-	}
 
 	return 0;
 }

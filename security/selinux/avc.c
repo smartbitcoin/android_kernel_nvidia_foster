@@ -658,6 +658,7 @@ static struct avc_node *avc_insert(u32 ssid, u32 tsid, u16 tclass,
 	struct avc_node *pos, *node = NULL;
 	int hvalue;
 	unsigned long flag;
+	int rc = 0;
 
 	if (avc_latest_notif_update(avd->seqno, 1))
 		goto out;
@@ -670,6 +671,11 @@ static struct avc_node *avc_insert(u32 ssid, u32 tsid, u16 tclass,
 		hvalue = avc_hash(ssid, tsid, tclass);
 		avc_node_populate(node, ssid, tsid, tclass, avd);
 
+		rc = avc_operation_populate(node, ops_node);
+		if (rc) {
+			kmem_cache_free(avc_node_cachep, node);
+			return NULL;
+		}
 		head = &avc_cache.slots[hvalue];
 		lock = &avc_cache.slots_lock[hvalue];
 
@@ -762,6 +768,21 @@ noinline int slow_avc_audit(u32 ssid, u32 tsid, u16 tclass,
 
 	common_lsm_audit(a, avc_audit_pre_callback, avc_audit_post_callback);
 	return 0;
+}
+
+static inline int avc_operation_audit(u32 ssid, u32 tsid, u16 tclass,
+				u32 requested, struct av_decision *avd,
+				struct operation_decision *od,
+				u16 cmd, int result,
+				struct common_audit_data *ad)
+{
+	u32 audited, denied;
+	audited = avc_operation_audit_required(
+			requested, avd, od, cmd, result, &denied);
+	if (likely(!audited))
+		return 0;
+	return slow_avc_audit(ssid, tsid, tclass, requested,
+			      audited, denied, result, ad, 0);
 }
 
 /**

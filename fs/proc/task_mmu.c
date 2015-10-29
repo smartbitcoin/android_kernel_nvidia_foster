@@ -804,7 +804,8 @@ static ssize_t clear_refs_write(struct file *file, const char __user *buf,
 	rv = kstrtoint(strstrip(buffer), 10, &type);
 	if (rv < 0)
 		return rv;
-	if (type < CLEAR_REFS_ALL || type > CLEAR_REFS_MAPPED)
+	if ((type < CLEAR_REFS_ALL || type > CLEAR_REFS_MAPPED) &&
+		type != CLEAR_REFS_MM_HIWATER_RSS)
 		return -EINVAL;
 	task = get_proc_task(file_inode(file));
 	if (!task)
